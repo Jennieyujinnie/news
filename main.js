@@ -5,7 +5,7 @@ const menus = document.querySelectorAll(".desktop-menus button, .side-menu-list 
 menus.forEach(menu=>menu.addEventListener("click",(event)=>getNewsByCategory(event)));
 
 const getLatestNews = async () => {
-    const url = new URL(`https://newsapi.org/v2/top-headlines?country=us&apiKey=${API_KEY}`);
+    const url = new URL(`https://noona-times-be-5ca9402f90d9.herokuapp.com/top-headlines?country=us&apiKey=${API_KEY}`);
 
     const response = await fetch(url);
     const data = await response.json();
@@ -17,7 +17,7 @@ const getLatestNews = async () => {
 const getNewsByCategory =  async (event) => {
     const category = event.target.textContent.toLowerCase();
     console.log("category", category);
-    const url = new URL(`https://newsapi.org/v2/top-headlines?country=us&category=${category}&apiKey=${API_KEY}`)
+    const url = new URL(`https://noona-times-be-5ca9402f90d9.herokuapp.com/top-headlines?country=us&category=${category}&apiKey=${API_KEY}`)
     const response = await fetch(url);
     const data = await response.json();
     console.log("ddd",  data);
