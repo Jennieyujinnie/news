@@ -2,27 +2,38 @@ const API_KEY = 'e02cd15efef7407b8df9fd7a784babaa';
 const NO_IMAGE_URL = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRqEWgS0uxxEYJ0PsOb2OgwyWvC0Gjp8NUdPw&usqp=CAU";
 let newsList = []
 const menus = document.querySelectorAll(".desktop-menus button, .side-menu-list button");
-menus.forEach(menu=>menu.addEventListener("click",(event)=>getNewsByCategory(event)));
+menus.forEach(menu => menu.addEventListener("click", (event) => getNewsByCategory(event)));
+let url = new URL(`https://noona-times-be-5ca9402f90d9.herokuapp.com/top-headlines?country=kr&apiKey=${API_KEY}`)
 
-const getLatestNews = async () => {
-    const url = new URL(`https://noona-times-be-5ca9402f90d9.herokuapp.com/top-headlines?country=us&apiKey=${API_KEY}`);
+const getNews = async () => {
+    try {
+        const response = await fetch(url);
 
-    const response = await fetch(url);
-    const data = await response.json();
-    newsList = data.articles;
-    render();
-    console.log("dddddd", newsList);
+        const data = await response.json();
+        if (response.status === 200) {
+               if(data.articles.length === 0) {
+                throw new Error("No result for this search");
+               }
+            newsList = data.articles;
+            render();
+        } else {
+            throw new Error(data.message);
+        }
+    } catch (error) {
+        errorRender(error.message);
+    }
 };
 
-const getNewsByCategory =  async (event) => {
+const getLatestNews = async () => {
+    url = new URL(`https://noona-times-be-5ca9402f90d9.herokuapp.com/top-headlines?country=kr&apiKey=${API_KEY}`);
+    getNews();
+};
+
+const getNewsByCategory = async (event) => {
     const category = event.target.textContent.toLowerCase();
     console.log("category", category);
-    const url = new URL(`https://noona-times-be-5ca9402f90d9.herokuapp.com/top-headlines?country=us&category=${category}&apiKey=${API_KEY}`)
-    const response = await fetch(url);
-    const data = await response.json();
-    console.log("ddd",  data);
-    newsList = data.articles;
-    render();
+    url = new URL(`https://noona-times-be-5ca9402f90d9.herokuapp.com/top-headlines?country=kr&category=${category}&apiKey=${API_KEY}`)
+    getNews();
 };
 
 const formatPublishedDate = (date) => {
@@ -30,7 +41,26 @@ const formatPublishedDate = (date) => {
     return moment(date).fromNow();
 };
 
+const getNewsByKeyword = async () => {
+    const keyword = document.getElementById("search-input").value.trim();
+    if (!keyword) return;
+
+    url = new URL("https://noona-times-be-5ca9402f90d9.herokuapp.com/top-headlines");
+    url.searchParams.set("country", "kr");
+    url.searchParams.set("q", keyword);
+    url.searchParams.set("apiKey", API_KEY);
+
+    getNews();
+};
+
+
+
 const render = () => {
+    if (!newsList || newsList.length === 0) {
+        document.getElementById("news-board").innerHTML = `<p class="news-error">표시할 뉴스가 없습니다.</p>`;
+        return;
+    }
+
     const newsHTML = newsList.map(news => `
         <div class="row news">
             <div class="col-lg-4">
@@ -39,13 +69,12 @@ const render = () => {
             </div>
             <div class="col-lg-8">
                 <h1>${news.title}</h1>
-                <p>${
-                    news.description == null || news.description == ""
-                        ? "내용없음"
-                        : news.description.length > 200
-                        ? news.description.substring(0, 200) + "..."
-                        : news.description
-                }</p>
+                <p>${news.description == null || news.description == ""
+            ? "내용없음"
+            : news.description.length > 200
+                ? news.description.substring(0, 200) + "..."
+                : news.description
+        }</p>
                 <div>${(news.source && news.source.name) || "no source"}  ${formatPublishedDate(news.publishedAt)}</div>
             </div>
         </div>
@@ -53,6 +82,13 @@ const render = () => {
 
     document.getElementById("news-board").innerHTML = newsHTML;
 }
+
+const errorRender = (errorMessage) => {
+    const errorHTML = `<div class="alert alert-danger" role="alert">
+  ${errorMessage}
+</div>`;
+    document.getElementById("news-board").innerHTML = errorHTML;
+};
 
 getLatestNews();
 
@@ -74,6 +110,5 @@ function openSearchBox() {
 }
 
 function searchNews() {
-    const keyword = document.getElementById("search-input").value;
-    console.log("search:", keyword);
+    getNewsByKeyword();
 }
