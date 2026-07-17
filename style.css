@@ -136,3 +136,10 @@
     margin-top: 0.5em;
   }
 }
+
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 1em;
+}

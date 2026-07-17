@@ -4,18 +4,29 @@ let newsList = []
 const menus = document.querySelectorAll(".desktop-menus button, .side-menu-list button");
 menus.forEach(menu => menu.addEventListener("click", (event) => getNewsByCategory(event)));
 let url = new URL(`https://noona-times-be-5ca9402f90d9.herokuapp.com/top-headlines?country=kr&apiKey=${API_KEY}`)
+let totalResults = 0
+let page = 1
+const pageSize = 10
+const groupSize = 5
+
 
 const getNews = async () => {
     try {
+        url.searchParams.set("page", page);
+        url.searchParams.set("pageSize", pageSize);
+
         const response = await fetch(url);
 
         const data = await response.json();
+        console.log("ddd", data);
         if (response.status === 200) {
-               if(data.articles.length === 0) {
+            if (data.articles.length === 0) {
                 throw new Error("No result for this search");
-               }
+            }
             newsList = data.articles;
+            totalResults = data.totalResults;
             render();
+            paginationRender();
         } else {
             throw new Error(data.message);
         }
@@ -25,11 +36,13 @@ const getNews = async () => {
 };
 
 const getLatestNews = async () => {
+    page = 1;
     url = new URL(`https://noona-times-be-5ca9402f90d9.herokuapp.com/top-headlines?country=kr&apiKey=${API_KEY}`);
     getNews();
 };
 
 const getNewsByCategory = async (event) => {
+    page = 1;
     const category = event.target.textContent.toLowerCase();
     console.log("category", category);
     url = new URL(`https://noona-times-be-5ca9402f90d9.herokuapp.com/top-headlines?country=kr&category=${category}&apiKey=${API_KEY}`)
@@ -45,6 +58,7 @@ const getNewsByKeyword = async () => {
     const keyword = document.getElementById("search-input").value.trim();
     if (!keyword) return;
 
+    page = 1;
     url = new URL("https://noona-times-be-5ca9402f90d9.herokuapp.com/top-headlines");
     url.searchParams.set("country", "kr");
     url.searchParams.set("q", keyword);
@@ -89,6 +103,51 @@ const errorRender = (errorMessage) => {
 </div>`;
     document.getElementById("news-board").innerHTML = errorHTML;
 };
+
+
+
+const paginationRender = () => {
+    const totalPages = Math.ceil(totalResults / pageSize);
+    const totalPageGroups = Math.ceil(totalPages / groupSize) || 1;
+    const pageGroup = Math.ceil(page / groupSize);
+    let lastPage = pageGroup * groupSize;
+    if (lastPage > totalPages) {
+        lastPage = totalPages;
+    }
+
+    const firstPage = Math.max(1, lastPage - (groupSize - 1));
+
+    let paginationHTML = ``;
+
+    if (pageGroup > 1) {
+        const prevGroupFirstPage = (pageGroup - 2) * groupSize + 1;
+        paginationHTML += `<li class="page-item" onclick="moveToPage(${prevGroupFirstPage})"><a class="page-link">&lt;&lt;</a></li>`;
+        paginationHTML += `<li class="page-item" onclick="moveToPage(${page - 1})"><a class="page-link">&lt;</a></li>`;
+    }
+
+    for (let i = firstPage; i <= lastPage; i++) {
+        paginationHTML += `<li class="page-item ${
+            i === page ? "active" : ""
+        }" onclick="moveToPage(${i})"><a class="page-link">${i}</a></li>`;
+    }
+
+    if (pageGroup < totalPageGroups) {
+        paginationHTML += `<li class="page-item" onclick="moveToPage(${page + 1})"><a class="page-link">&gt;</a></li>`;
+        const nextGroupFirstPage = pageGroup * groupSize + 1;
+        paginationHTML += `<li class="page-item" onclick="moveToPage(${nextGroupFirstPage})"><a class="page-link">&gt;&gt;</a></li>`;
+    }
+
+    document.querySelector(".pagination").innerHTML = paginationHTML;
+}
+
+
+function moveToPage(pageNum) {
+    const totalPages = Math.ceil(totalResults / pageSize);
+    if (pageNum < 1 || pageNum > totalPages) return;
+
+    page = pageNum;
+    getNews();
+}
 
 getLatestNews();
 
